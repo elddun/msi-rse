@@ -1,32 +1,40 @@
 import numpy as np
-from rse import RandomSubspaceEnsemble
+#from rse import RandomSubspaceEnsemble
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.base import clone
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
+
+
+#słownik z klasyfikatorami których będziemy używać w testach
 clfs = {
-    'RSE': RandomSubspaceEnsemble(base_estimator=GaussianNB(), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=123),
+    #'RSE': RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=123),
+    'GNB': GaussianNB(),
+    'CART': DecisionTreeClassifier(random_state=123),
     'AdaBoost': AdaBoostClassifier(n_estimators=10, random_state=123),
-    'Bagging': BaggingClassifier(base_estimator=GaussianNB(), n_estimators=10, random_state=123, bootstrap=True),
-    'scikit-learn-rse': BaggingClassifier(base_estimator=GaussianNB(), n_estimators=10, random_state=123, bootstrap=True, bootstrap_features=True, max_features=0.9)
-
-
+    'Bagging': BaggingClassifier(base_estimator=DecisionTreeClassifier(), n_estimators=10, random_state=123, bootstrap=True),
+    
 }
 
-datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes']
+#zestawy danych wybrane na potrzeby testów
+datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes']\
 
-
+#stratyfikowana wielokrotna walidacja krzyżowa 5-krotna z 2-oma powtórzeniamy
 n_datasets = len(datasets)
 n_splits = 5
 n_repeats = 2
 rskf = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=1234)
 
+#macierz gdzie liczba wierszy to liczba testowanych modeli, kolumny to zestawy danych, a 3. wymiar to wyniki uzyskane w proacesie walidacji 5*2
 scores = np.zeros((len(clfs), n_datasets, n_splits * n_repeats))
-
-
+#print(scores)
+# xxx = np.zeros((2,2,10))
+# print(xxx)
 
 for data_id, dataset in enumerate(datasets):
     dataset = np.genfromtxt("datasets/%s.csv" % (dataset), delimiter=",")
@@ -37,19 +45,21 @@ for data_id, dataset in enumerate(datasets):
         for clf_id, clf_name in enumerate(clfs):
             clf = clone(clfs[clf_name])
             clf.fit(X[train], y[train])
+            #print(X[train].shape[1])
             y_pred = clf.predict(X[test])
             scores[clf_id, data_id, fold_id] = accuracy_score(y[test], y_pred)
 
+#zapisujemy wyniki 
 np.save('results', scores)
-
-
+#wczytujemy wyniki
 scores = np.load('results.npy')
+#print(scores)
 print("\nScores:\n", scores.shape)
-
+#Uśredniamy wyniki po foldach, axis 2 oznacza że uśredniony zostanie 3 wymiar, następnie transponujemy macierz żeby w kolumnach znajdowały się metody, a w wierszach zbiory danych
 mean_scores = np.mean(scores, axis=2).T
 print("\nMean scores:\n", mean_scores)
 
-
+#Rangi. Im wyższa tym metoda jest lepsza. 
 from scipy.stats import rankdata
 ranks = []
 for ms in mean_scores:
@@ -57,11 +67,22 @@ for ms in mean_scores:
 ranks = np.array(ranks)
 print("\nRanks:\n", ranks)
 
-mean_ranks = np.mean(ranks, axis=0)
-print("\nMean ranks:\n", mean_ranks)
+    
+clfsname=[]
+for a in clfs:
+    clfsname.append(a)
+clfsname = np.array(clfsname)
+print("\nModels:", clfsname)
 
+mean_ranks = np.mean(ranks, axis=0)
+print("\nMean ranks:", mean_ranks)
+
+
+#statystyczne testy parowe, test Wilcoxona
+##alfa =0.05 
 from scipy.stats import ranksums
 
+#teest wilcoxa
 alfa = .05
 w_statistic = np.zeros((len(clfs), len(clfs)))
 p_value = np.zeros((len(clfs), len(clfs)))
@@ -70,8 +91,9 @@ for i in range(len(clfs)):
     for j in range(len(clfs)):
         w_statistic[i, j], p_value[i, j] = ranksums(ranks.T[i], ranks.T[j])
 
-
 from tabulate import tabulate
+
+
 
 headers = list(clfs.keys())
 names_column = np.expand_dims(np.array(list(clfs.keys())), axis=1)
@@ -86,11 +108,16 @@ advantage = np.zeros((len(clfs), len(clfs)))
 advantage[w_statistic > 0] = 1
 advantage_table = tabulate(np.concatenate(
     (names_column, advantage), axis=1), headers)
-print("\nAdvantage:\n", advantage_table)
-
+print("Advantage:\n", advantage_table)
 
 significance = np.zeros((len(clfs), len(clfs)))
 significance[p_value <= alfa] = 1
 significance_table = tabulate(np.concatenate(
     (names_column, significance), axis=1), headers)
 print("\nStatistical significance (alpha = 0.05):\n", significance_table)
+
+
+stat_better = significance * advantage
+stat_better_table = tabulate(np.concatenate(
+    (names_column, stat_better), axis=1), headers)
+print("Statistically significantly better:\n", stat_better_table)
