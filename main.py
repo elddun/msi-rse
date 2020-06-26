@@ -1,5 +1,6 @@
 import numpy as np
-#from rse import RandomSubspaceEnsemble
+from rse import RandomSubspaceEnsemble
+
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import accuracy_score
@@ -8,21 +9,23 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from mojerse import MyRandomSubspaceEnsemble
 
-
+ransdom_st = 12
 
 #słownik z klasyfikatorami których będziemy używać w testach
 clfs = {
-    #'RSE': RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=123),
-    'GNB': GaussianNB(),
-    'CART': DecisionTreeClassifier(random_state=123),
-    'AdaBoost': AdaBoostClassifier(n_estimators=10, random_state=123),
-    'Bagging': BaggingClassifier(base_estimator=DecisionTreeClassifier(), n_estimators=10, random_state=123, bootstrap=True),
+    'RSE': RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=ransdom_st),    
+    'mojeRse':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=False, random_state=ransdom_st),    
+    'AdaBoost': AdaBoostClassifier(n_estimators=10, random_state=ransdom_st),
+    'Bagging': BaggingClassifier(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, random_state=ransdom_st, bootstrap=True),
+    'RSE_SM':RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=True, random_state=ransdom_st),
+    'mojeRSE_SM':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=True, random_state=ransdom_st)
     
 }
 
 #zestawy danych wybrane na potrzeby testów
-datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes']\
+datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes','ecoli4','german', 'glass4']
 
 #stratyfikowana wielokrotna walidacja krzyżowa 5-krotna z 2-oma powtórzeniamy
 n_datasets = len(datasets)
@@ -40,7 +43,7 @@ for data_id, dataset in enumerate(datasets):
     dataset = np.genfromtxt("datasets/%s.csv" % (dataset), delimiter=",")
     X = dataset[:, :-1]
     y = dataset[:, -1].astype(int)
-
+    print("ksztalt datasetu", datasets[data_id], " wymiary" , X.shape)
     for fold_id, (train, test) in enumerate(rskf.split(X, y)):
         for clf_id, clf_name in enumerate(clfs):
             clf = clone(clfs[clf_name])
@@ -59,6 +62,8 @@ print("\nScores:\n", scores.shape)
 mean_scores = np.mean(scores, axis=2).T
 print("\nMean scores:\n", mean_scores)
 
+mean = np.mean(mean_scores, axis=0)
+print("\nFor all datasets:", mean)
 #Rangi. Im wyższa tym metoda jest lepsza. 
 from scipy.stats import rankdata
 ranks = []
