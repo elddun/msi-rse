@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from mojerse import MyRandomSubspaceEnsemble
 
-ransdom_st = 12
+ransdom_st = 1939
 
 #słownik z klasyfikatorami których będziemy używać w testach
 clfs = {
@@ -25,7 +25,7 @@ clfs = {
 }
 
 #zestawy danych wybrane na potrzeby testów
-datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes','ecoli4','german', 'glass4']
+datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes','ecoli4','german', 'glass4','cryotherapy','soybean','sonar']
 
 #stratyfikowana wielokrotna walidacja krzyżowa 5-krotna z 2-oma powtórzeniamy
 n_datasets = len(datasets)

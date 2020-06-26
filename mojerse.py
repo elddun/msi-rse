@@ -19,18 +19,21 @@ class MyRandomSubspaceEnsemble(BaseEnsemble, ClassifierMixin):
             # Ustawianie ziarna losowosci
             self.random_state = random_state
             np.random.seed(self.random_state)
+            
+    def prepare_subspace(self, X, feat_count, train=True):
 
-    def prepare_subspace(self, X, feat_count):
-        cols_id=[]
-        for i in range(self.n_estimators):
-            cols_id.append(np.random.randint(0, feat_count, size=self.feat_per_subsp))
+        if train==True:
+            self.cols_id=[]
+            
+            for i in range(self.n_estimators):
+                self.cols_id.append(np.random.randint(0, feat_count, size=self.feat_per_subsp))
 
-        cols_id = np.array(cols_id)
-       # print("indeksy kolumn:\n",cols_id)
+            self.cols_id = np.array(self.cols_id)
+            # print("indeksy kolumn:\n",cols_id)
 
         subsp=[]
         for i in range(self.n_estimators):
-            subsp.append(X[:,cols_id[i]])
+            subsp.append(X[:,self.cols_id[i]])
         subsp = np.array(subsp)
         #print("ksztalt podprzestrzeni uczących:", subsp.shape)
        # print("podprzestrzenie uczące:\n",subsp)
@@ -45,8 +48,8 @@ class MyRandomSubspaceEnsemble(BaseEnsemble, ClassifierMixin):
         if self.feat_per_subsp > self.feat_count:
             raise ValueError("Ilośc atrybutów w podprzestrzeni jest większa niż liczba atrybutów")
         #losujemy indeksy kolumn
-        train_subsp = self.prepare_subspace(X, self.feat_count)
-
+        train_subsp = self.prepare_subspace(X, self.feat_count, train=True)
+        
         self.ensemble=[]
         for i in range(self.n_estimators):
            # print("wyuczamy model nr:",i,"na podprzestrzeni nr:", i)
@@ -57,7 +60,8 @@ class MyRandomSubspaceEnsemble(BaseEnsemble, ClassifierMixin):
         X = check_array(X)
         if X.shape[1] != self.feat_count:
             raise ValueError("Ilość atrybutów się nie zgadza")
-        test_subsp = self.prepare_subspace(X, self.feat_count)
+        test_subsp = self.prepare_subspace(X, self.feat_count, train=False)
+       
         if self.hard_voting:            
             voting = []
             for i, ensemble_member in enumerate(self.ensemble):
