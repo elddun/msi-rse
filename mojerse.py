@@ -36,7 +36,7 @@ class MyRandomSubspaceEnsemble(BaseEnsemble, ClassifierMixin):
             subsp.append(X[:,self.cols_id[i]])
         subsp = np.array(subsp)
         #print("ksztalt podprzestrzeni uczących:", subsp.shape)
-       # print("podprzestrzenie uczące:\n",subsp)
+        #print("podprzestrzenie uczące:\n",subsp)
         return (subsp)
 
     def fit(self, X,y):

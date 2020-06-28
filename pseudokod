@@ -1,0 +1,21 @@
+Dane:       
+    base_estimator  - klasyfikator bazowy
+    n_estimators  - liczba klasyfikatorów w zespole
+    feat_per_subsp - liczba atrybutów w podprzestrzeni
+    hard_voting  - wybór predykcji. True - głosowanie większościowe, False - prawdopodobieństwo przynależności do klas
+    X - zbiór treningowy
+Wynik: predykcja
+
+begin
+    feat_count = ilość kolumn zbioru 
+    if feat_per_subsp > feat_count
+        Wymuś ValueError o treści "Ilośc atrybutów w podprzestrzeni jest większa niż liczba atrybutów"
+    train_subsp = podprzestrzeń zbioru X, o 
+
+
+
+
+
+
+    def prepare_subspace(Zbiór_danych, ilość atrybutów zbioru, True jeżeli trening, False jeżeli predykcja)
+        

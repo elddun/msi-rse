@@ -11,21 +11,24 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from mojerse import MyRandomSubspaceEnsemble
 
-ransdom_st = 1939
+ransdom_st = 772
 
 #słownik z klasyfikatorami których będziemy używać w testach
 clfs = {
-    'RSE': RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=ransdom_st),    
-    'mojeRse':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=False, random_state=ransdom_st),    
-    'AdaBoost': AdaBoostClassifier(n_estimators=10, random_state=ransdom_st),
-    'Bagging': BaggingClassifier(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, random_state=ransdom_st, bootstrap=True),
-    'RSE_SM':RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=True, random_state=ransdom_st),
-    'mojeRSE_SM':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=True, random_state=ransdom_st)
+    # 'RSE': RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=True, random_state=ransdom_st),    
+    # 'mojeRse':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=True, random_state=ransdom_st),    
+    # 'AdaBoost': AdaBoostClassifier(base_estimator =DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, random_state=ransdom_st),
+    # 'Bagging': BaggingClassifier(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, random_state=ransdom_st, bootstrap=True),
+
+    'RSE_SM':RandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, n_subspace_features=5, hard_voting=False, random_state=ransdom_st),
+    'mojeRSE_SM':MyRandomSubspaceEnsemble(base_estimator=DecisionTreeClassifier(random_state=ransdom_st), n_estimators=10, feat_per_subsp=5, hard_voting=False, random_state=ransdom_st),
+    'AdaBoost': AdaBoostClassifier(base_estimator=GaussianNB(),n_estimators=10, random_state=ransdom_st),
+    'Bagging': BaggingClassifier(base_estimator=GaussianNB(), n_estimators=10, random_state=ransdom_st, bootstrap=True),
     
 }
 
 #zestawy danych wybrane na potrzeby testów
-datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes','ecoli4','german', 'glass4','cryotherapy','soybean','sonar']
+datasets = ['ionosphere', 'australian', 'breastcan', 'diabetes','ecoli4','german', 'glass4','cryotherapy','yeast6','sonar']
 
 #stratyfikowana wielokrotna walidacja krzyżowa 5-krotna z 2-oma powtórzeniamy
 n_datasets = len(datasets)
@@ -43,7 +46,7 @@ for data_id, dataset in enumerate(datasets):
     dataset = np.genfromtxt("datasets/%s.csv" % (dataset), delimiter=",")
     X = dataset[:, :-1]
     y = dataset[:, -1].astype(int)
-    print("ksztalt datasetu", datasets[data_id], " wymiary" , X.shape)
+    #print("ksztalt datasetu", datasets[data_id], " wymiary" , X.shape)
     for fold_id, (train, test) in enumerate(rskf.split(X, y)):
         for clf_id, clf_name in enumerate(clfs):
             clf = clone(clfs[clf_name])
@@ -52,9 +55,19 @@ for data_id, dataset in enumerate(datasets):
             y_pred = clf.predict(X[test])
             scores[clf_id, data_id, fold_id] = accuracy_score(y[test], y_pred)
 
+
+
+
 #zapisujemy wyniki 
 np.save('results', scores)
 #wczytujemy wyniki
+#print("Folds:\n", scores)
+# mean = np.mean(scores, axis=2).T
+# std = np.std(scores, axis=2).T
+# for clf_id, clf_name in enumerate(clfs):
+#     print("%s: %.3f (%.2f)" % (clf_name, mean[clf_id], std[clf_id]))
+
+
 scores = np.load('results.npy')
 #print(scores)
 print("\nScores:\n", scores.shape)
@@ -126,3 +139,21 @@ stat_better = significance * advantage
 stat_better_table = tabulate(np.concatenate(
     (names_column, stat_better), axis=1), headers)
 print("Statistically significantly better:\n", stat_better_table)
+
+
+
+# print("####################################################################")
+# print(scores.shape)
+
+# for i,dataset in enumerate(datasets):
+#      print("dataset:", datasets[i])
+#     from scipy.stats import ttest_ind
+
+#     alfa = .05
+#     t_statistic = np.zeros((len(clfs), len(clfs)))
+#     p_value = np.zeros((len(clfs), len(clfs)))
+
+#     for i in range(len(clfs)):
+#         for j in range(len(clfs)):
+#             t_statistic[i, j], p_value[i, j] = ttest_ind(scores[i], scores[j])
+#     print("t-statistic:\n", t_statistic, "\n\np-value:\n", p_value)
